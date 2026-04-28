@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const { initDb } = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -27,7 +28,20 @@ app.use('/api/*', (req, res) => {
   res.status(404).json({ error: 'API route not found' });
 });
 
-app.listen(PORT, () => {
-  console.log(`\n🚀 EAPCET server running on http://localhost:${PORT}`);
-  console.log(`   Open http://localhost:${PORT} in your browser\n`);
-});
+// Initialize DB and Start Server (Local only, Vercel uses exported app)
+const startServer = async () => {
+  try {
+    await initDb();
+    if (process.env.NODE_ENV !== 'production') {
+      app.listen(PORT, () => {
+        console.log(`\n🚀 EAPCET server running on http://localhost:${PORT}`);
+      });
+    }
+  } catch (err) {
+    console.error("Failed to initialize server:", err);
+  }
+};
+
+startServer();
+
+module.exports = app;

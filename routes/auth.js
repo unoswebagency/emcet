@@ -15,16 +15,16 @@ router.post('/register', async (req, res) => {
     return res.status(400).json({ error: 'Password must be at least 6 characters' });
 
   try {
-    const existing = stmts.getUserByEmail.get(email);
-    if (existing) return res.status(409).json({ error: 'Email already registered' });
+    const existingResult = await stmts.getUserByEmail(email.trim().toLowerCase());
+    if (existingResult.rows.length > 0) return res.status(409).json({ error: 'Email already registered' });
 
     const hash = await bcrypt.hash(password, 10);
-    const result = stmts.createUser.run(username.trim(), email.trim().toLowerCase(), hash);
-    const userId = result.lastInsertRowid;
+    const result = await stmts.createUser(username.trim(), email.trim().toLowerCase(), hash);
+    const userId = result.rows[0].id;
 
     // Init empty progress & pomodoro rows
-    stmts.upsertProgress.run(userId, '{}', '{}');
-    stmts.upsertPomodoro.run(userId, 0, 0, 0, null);
+    await stmts.upsertProgress(userId, {}, {});
+    await stmts.upsertPomodoro(userId, 0, 0, 0, null);
 
     const token = jwt.sign(
       { id: userId, username: username.trim() },
@@ -45,7 +45,8 @@ router.post('/login', async (req, res) => {
     return res.status(400).json({ error: 'Email and password required' });
 
   try {
-    const user = stmts.getUserByEmail.get(email.trim().toLowerCase());
+    const result = await stmts.getUserByEmail(email.trim().toLowerCase());
+    const user = result.rows[0];
     if (!user) return res.status(401).json({ error: 'Invalid email or password' });
 
     const match = await bcrypt.compare(password, user.password_hash);
@@ -64,10 +65,15 @@ router.post('/login', async (req, res) => {
 });
 
 // GET /api/auth/me
-router.get('/me', authMiddleware, (req, res) => {
-  const user = stmts.getUserById.get(req.userId);
-  if (!user) return res.status(404).json({ error: 'User not found' });
-  res.json({ user });
+router.get('/me', authMiddleware, async (req, res) => {
+  try {
+    const result = await stmts.getUserById(req.userId);
+    const user = result.rows[0];
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ user });
+  } catch (e) {
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 module.exports = router;
