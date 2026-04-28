@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: eapcet-study-app
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: eapcet-db
+          property: connectionString
+
+databases:
+  - name: eapcet-db
+    plan: free
