@@ -1,5 +1,4 @@
 const { Pool } = require('pg');
-const Database = require('better-sqlite3');
 const path = require('path');
 require('dotenv').config();
 
@@ -15,6 +14,7 @@ if (isPg) {
   });
 } else {
   console.log("Using SQLite (Local Mode)");
+  const Database = require('better-sqlite3');
   sqliteDb = new Database(path.join(__dirname, 'eapcet.db'));
   sqliteDb.pragma('journal_mode = WAL');
 }
