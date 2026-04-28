@@ -3,6 +3,7 @@ const path = require('path');
 require('dotenv').config();
 
 const isPg = !!process.env.DATABASE_URL;
+const isVercel = !!process.env.VERCEL;
 let pgPool = null;
 let sqliteDb = null;
 
@@ -12,6 +13,8 @@ if (isPg) {
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
   });
+} else if (isVercel) {
+  console.warn("WARNING: DATABASE_URL missing on Vercel. Database operations will fail until configured.");
 } else {
   console.log("Using SQLite (Local Mode)");
   const Database = eval('require')('better-sqlite3');
@@ -23,6 +26,8 @@ if (isPg) {
 const query = async (text, params = []) => {
   if (isPg) {
     return await pgPool.query(text, params);
+  } else if (isVercel) {
+    throw new Error("Database not configured. Please set DATABASE_URL on Vercel.");
   } else {
     // Convert SQLite to PG-style result object
     const sql = text.replace(/\$(\d+)/g, '?'); // Convert $1, $2 to ?
