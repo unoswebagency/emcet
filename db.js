@@ -14,7 +14,7 @@ if (isPg) {
   });
 } else {
   console.log("Using SQLite (Local Mode)");
-  const Database = require('better-sqlite3');
+  const Database = eval('require')('better-sqlite3');
   sqliteDb = new Database(path.join(__dirname, 'eapcet.db'));
   sqliteDb.pragma('journal_mode = WAL');
 }
